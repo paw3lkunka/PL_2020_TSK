@@ -48,6 +48,8 @@ public class FloatingObjectMesh : MonoBehaviour
     }
 
     public int VertexCount { get => meshFilter.mesh.vertexCount; }
+    public int[] Indices { get => meshFilter.mesh.triangles; }
+    public int IndicesCount { get => meshFilter.mesh.triangles.Length; }
 
     private MeshFilter meshFilter;
 

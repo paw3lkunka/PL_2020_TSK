@@ -6,35 +6,50 @@ using UnityEngine;
 public class FluidSurfaceMesh : MonoBehaviour
 {
     // Fluid surface plane width and height in meters
-    [SerializeField]private float l = 10.0f;
-    public float L
+    [SerializeField]private float size = 10.0f;
+    public float Size
     {
-        get => l;
+        get => size;
         set 
         {
-            l = value;
+            size = value;
             surfaceModified = true;
         }
     }
 
-    [HideInInspector]public float minL = 0.0f;
+    [HideInInspector]public float minSize = 0.0f;
 
     // Fluid surface plane resolution
-    [SerializeField]private int n = 10;
-    public int N
+    [SerializeField]private int resolution = 10;
+    public int Resolution
     {
-        get => n;
+        get => resolution;
         set 
         {
-            n = value;
+            resolution = value;
             surfaceModified = true;
         }
     }
 
     private bool surfaceModified = true;
 
-    public Vector3[] vertices;
-    private int[] indicies;
+    [HideInInspector]public Vector3[] vertices;
+    public Vector3[] Vertices
+    {
+        get
+        {
+            Vector3[] worldVertices = vertices;
+
+            for(int i = 0; i < meshFilter.mesh.vertexCount; i++)
+            {
+                worldVertices[i] = transform.localToWorldMatrix.MultiplyPoint3x4(meshFilter.mesh.vertices[i]);
+            }
+            
+            return worldVertices;
+        }
+    }
+
+    private int[] indices;
 
     private Mesh mesh;
     private MeshFilter meshFilter;
@@ -57,10 +72,10 @@ public class FluidSurfaceMesh : MonoBehaviour
 
     private void Update()
     {
-        if(L < minL)
+        if(Size < minSize)
         {
-            Debug.Log($"Changing L from { L } to { minL }.");
-            L = minL;
+            Debug.Log($"Changing L from { Size } to { minSize }.");
+            Size = minSize;
         }
 
         if(surfaceModified)
@@ -75,7 +90,7 @@ public class FluidSurfaceMesh : MonoBehaviour
         mesh.Clear();
 
         mesh.vertices = vertices;
-        mesh.triangles = indicies;
+        mesh.triangles = indices;
 
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
@@ -83,29 +98,29 @@ public class FluidSurfaceMesh : MonoBehaviour
 
     private void GenerateMesh()
     {
-        vertices = new Vector3[(n + 1) * (n + 1)];
-        indicies = new int[(n * (n + 1) - 1) * 6];
+        vertices = new Vector3[(resolution + 1) * (resolution + 1)];
+        indices = new int[(resolution * (resolution + 1) - 1) * 6];
 
-        float offset = -(l / 2.0f);
-        float tileSize = l / (float)n;
+        float offset = -(size / 2.0f);
+        float tileSize = size / (float)resolution;
 
-        for(int i = 0; i <= n; i++)
+        for(int i = 0; i <= resolution; i++)
         {
-            for(int j = 0; j <= n; j++)
+            for(int j = 0; j <= resolution; j++)
             {
-                vertices[i * (n + 1) + j] = new Vector3((j * tileSize) + offset, 0, (i * tileSize) + offset);
+                vertices[i * (resolution + 1) + j] = new Vector3((j * tileSize) + offset, 0, (i * tileSize) + offset);
             }
         }
 
-        for(int i = 0; i < n * (n + 1) - 1; i++)
+        for(int i = 0; i < resolution * (resolution + 1) - 1; i++)
         {
-            indicies[i * 6] = i;
-            indicies[i * 6 + 1] = i + n + 2;
-            indicies[i * 6 + 2] = i + 1;
+            indices[i * 6] = i;
+            indices[i * 6 + 1] = i + resolution + 2;
+            indices[i * 6 + 2] = i + 1;
 
-            indicies[i * 6 + 3] = i;
-            indicies[i * 6 + 4] = i + n + 1;
-            indicies[i * 6 + 5] = i + n + 2;
+            indices[i * 6 + 3] = i;
+            indices[i * 6 + 4] = i + resolution + 1;
+            indices[i * 6 + 5] = i + resolution + 2;
         }
     }
 }

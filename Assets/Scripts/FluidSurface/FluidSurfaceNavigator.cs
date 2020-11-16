@@ -40,13 +40,13 @@ public class FluidSurfaceNavigator : MonoBehaviour
 
         for(int i = 0; i < objectMesh.VertexCount; i++)
         {
-            float currentDistance = (objectMesh.Vertices[i] - objectTransform.position).sqrMagnitude;
+            float currentDistance = (objectMesh.Vertices[i] - objectTransform.position).magnitude;
             if(maxDistance < currentDistance)
             {
                 maxDistance = currentDistance;
             }
         }
         
-        mesh.minL = maxDistance * 2.5f;
+        mesh.minSize = maxDistance * 2.5f;
     }
 }

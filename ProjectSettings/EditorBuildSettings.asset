@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/WaterInteractionModel.unity
+    guid: cb3e5213811121f67be7be7e0eeda5fc
   m_configObjects: {}

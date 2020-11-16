@@ -19,12 +19,17 @@ public class FluidSurfaceWaves : MonoBehaviour
 
     private void FixedUpdate()
     {
-        for(int i = 0; i < (mesh.N + 1) * (mesh.N + 1); i++)
+        for(int i = 0; i < (mesh.Resolution + 1) * (mesh.Resolution + 1); i++)
         {
-            float pX = (mesh.vertices[i].x + transform.position.x) * scale + (Time.timeSinceLevelLoad * speed) + offset;
-            float pZ = (mesh.vertices[i].z + transform.position.z) * scale + (Time.timeSinceLevelLoad * speed) + offset;
-            
-            mesh.vertices[i].y = Mathf.PerlinNoise(pX, pZ) * height;
+            mesh.vertices[i].y = SurfaceHeightForVertex(mesh.vertices[i]);
         }
+    }
+
+    public float SurfaceHeightForVertex(Vector3 vertex)
+    {
+        float pX = vertex.x * scale + (Time.timeSinceLevelLoad * speed) + offset;
+        float pZ = vertex.z * scale + (Time.timeSinceLevelLoad * speed) + offset;
+        
+        return Mathf.PerlinNoise(pX, pZ) * height;
     }
 }
