@@ -24,7 +24,7 @@ public class FloatingObjectMeshParser : MonoBehaviour
         surfaceWaves = surfaceMesh.gameObject.GetComponent<FluidSurfaceWaves>() as FluidSurfaceWaves;
     }
     
-    private void Update()
+    private void FixedUpdate()
     {
         Vector3[] vertices = mesh.Vertices;
         int[] indices = mesh.Indices;
@@ -41,7 +41,7 @@ public class FloatingObjectMeshParser : MonoBehaviour
         for(int i = 0; i < mesh.VertexCount; i++)
         {
             // verticesHeights[i] = CalculateVertexHeight(vertices[i], surfaceVertices);
-            verticesHeights[i] = surfaceWaves.SurfaceHeightForVertex(vertices[i]);
+            verticesHeights[i] = vertices[i].y - surfaceWaves.SurfaceHeightForVertex(vertices[i]);
         }
     }
 
@@ -86,7 +86,7 @@ public class FloatingObjectMeshParser : MonoBehaviour
             meshTriangle[1] = new KeyValuePair<Vector3, float>(vertices[indices[i + 1]], verticesHeights[indices[i + 1]]);
             meshTriangle[2] = new KeyValuePair<Vector3, float>(vertices[indices[i + 2]], verticesHeights[indices[i + 2]]);
 
-            // meshTriangle.OrderByDescending(o => o.Value);
+            meshTriangle = meshTriangle.OrderByDescending(o => o.Value).ToArray();
             
             Vector3 h = meshTriangle[0].Key;
             Vector3 m = meshTriangle[1].Key;
@@ -108,8 +108,8 @@ public class FloatingObjectMeshParser : MonoBehaviour
                 Vector3 iL = l + (h - l) * tL;
                 // float hIM = CalculateVertexHeight(iM, surfaceVertices);
                 // float hIL = CalculateVertexHeight(iL, surfaceVertices);
-                float hIM = surfaceWaves.SurfaceHeightForVertex(iM);
-                float hIL = surfaceWaves.SurfaceHeightForVertex(iL);
+                float hIM = iM.y - surfaceWaves.SurfaceHeightForVertex(iM);
+                float hIL = iL.y - surfaceWaves.SurfaceHeightForVertex(iL);
 
                 submerged.Add(new Triangle(m, iM, l, hM, hIM, hL));
                 submerged.Add(new Triangle(l, iL, iM, hL, hIL, hIM));
@@ -123,8 +123,8 @@ public class FloatingObjectMeshParser : MonoBehaviour
                 Vector3 jH = l + (h -l) * tH;
                 // float hJM = CalculateVertexHeight(jM, surfaceVertices);
                 // float hJH = CalculateVertexHeight(jH, surfaceVertices);
-                float hJM = surfaceWaves.SurfaceHeightForVertex(jM);
-                float hJH = surfaceWaves.SurfaceHeightForVertex(jH); 
+                float hJM = jM.y - surfaceWaves.SurfaceHeightForVertex(jM);
+                float hJH = jH.y - surfaceWaves.SurfaceHeightForVertex(jH); 
                 
                 submerged.Add(new Triangle(l, jM, jH, hL, hJM, hJH));
                 // surfaced.Add(new Triangle(h, jH, m, hH, hJH, hM));

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System.Linq;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -38,7 +39,7 @@ public class FluidSurfaceMesh : MonoBehaviour
     {
         get
         {
-            Vector3[] worldVertices = vertices;
+            Vector3[] worldVertices = vertices.ToArray();
 
             for(int i = 0; i < meshFilter.mesh.vertexCount; i++)
             {
@@ -74,7 +75,6 @@ public class FluidSurfaceMesh : MonoBehaviour
     {
         if(Size < minSize)
         {
-            Debug.Log($"Changing L from { Size } to { minSize }.");
             Size = minSize;
         }
 
