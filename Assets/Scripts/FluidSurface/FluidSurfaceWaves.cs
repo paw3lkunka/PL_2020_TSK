@@ -21,8 +21,8 @@ public class FluidSurfaceWaves : MonoBehaviour
     {
         for(int i = 0; i < (mesh.N + 1) * (mesh.N + 1); i++)
         {
-            float pX = (mesh.vertices[i].x * scale) + (Time.timeSinceLevelLoad * speed) + offset;
-            float pZ = (mesh.vertices[i].z * scale) + (Time.timeSinceLevelLoad * speed) + offset;
+            float pX = (mesh.vertices[i].x + transform.position.x) * scale + (Time.timeSinceLevelLoad * speed) + offset;
+            float pZ = (mesh.vertices[i].z + transform.position.z) * scale + (Time.timeSinceLevelLoad * speed) + offset;
             
             mesh.vertices[i].y = Mathf.PerlinNoise(pX, pZ) * height;
         }

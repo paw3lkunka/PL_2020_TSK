@@ -6,7 +6,7 @@ using UnityEngine;
 public class FluidSurfaceMesh : MonoBehaviour
 {
     // Fluid surface plane width and height in meters
-    [SerializeField]private float l = 10;
+    [SerializeField]private float l = 10.0f;
     public float L
     {
         get => l;
@@ -16,6 +16,8 @@ public class FluidSurfaceMesh : MonoBehaviour
             surfaceModified = true;
         }
     }
+
+    [HideInInspector]public float minL = 0.0f;
 
     // Fluid surface plane resolution
     [SerializeField]private int n = 10;
@@ -47,7 +49,7 @@ public class FluidSurfaceMesh : MonoBehaviour
         meshFilter.mesh = mesh;
 
         GameObject primitive = GameObject.CreatePrimitive(PrimitiveType.Plane);
-        primitive.active = false;
+        primitive.SetActive(false);
         Material diffuse = primitive.GetComponent<MeshRenderer>().sharedMaterial;
         DestroyImmediate(primitive);
         meshRenderer.material = diffuse;
@@ -55,6 +57,12 @@ public class FluidSurfaceMesh : MonoBehaviour
 
     private void Update()
     {
+        if(L < minL)
+        {
+            Debug.Log($"Changing L from { L } to { minL }.");
+            L = minL;
+        }
+
         if(surfaceModified)
         {
             GenerateMesh();

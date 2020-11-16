@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,7 +8,7 @@ public class FloatingObjectMesh : MonoBehaviour
 {
     public List<Mesh> availableMeshes;
 
-    private int currentMeshIndex;
+    [SerializeField]private int currentMeshIndex = 0;
     public int CurrentMeshIndex
     {
         get => currentMeshIndex;
@@ -15,6 +16,7 @@ public class FloatingObjectMesh : MonoBehaviour
         {
             currentMeshIndex = value;
             meshFilter.mesh = availableMeshes[currentMeshIndex];
+            OnMeshChange?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -26,6 +28,7 @@ public class FloatingObjectMesh : MonoBehaviour
         {
             scale = value;
             transform.localScale = new Vector3(scale, scale, scale);
+            OnMeshChange?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -34,20 +37,27 @@ public class FloatingObjectMesh : MonoBehaviour
         get
         {
             Vector3[] vertices = new Vector3[meshFilter.mesh.vertexCount];
+
             for(int i = 0; i < meshFilter.mesh.vertexCount; i++)
             {
                 vertices[i] = transform.localToWorldMatrix.MultiplyPoint3x4(meshFilter.mesh.vertices[i]);
             }
+            
             return vertices;
         }
     }
 
-    private Transform transform;
+    public int VertexCount { get => meshFilter.mesh.vertexCount; }
+
     private MeshFilter meshFilter;
+
+    [HideInInspector]public EventHandler OnMeshChange;
 
     private void Awake()
     {
-        transform = gameObject.GetComponent<Transform>() as Transform;
         meshFilter = gameObject.GetComponent<MeshFilter>() as MeshFilter;
+
+        transform.localScale = new Vector3(scale, scale, scale);
+        meshFilter.mesh = meshFilter.mesh = availableMeshes[currentMeshIndex];
     }
 }
