@@ -40,6 +40,12 @@ public class FloatingObjectDebug : MonoBehaviour
     {
         Vector3[] submergedVertices = new Vector3[meshParser.submerged.Count * 3];
         int[] submergedIndices = new int[meshParser.submerged.Count * 3];
+
+        for(int i = 0; i < meshParser.submerged.Count; i++)
+        {
+            // TODO: do something with this idea
+            // for(int j = 0; )
+        }
         
         // meshParser.submerged.Count
         for(int i = 0; i < meshParser.submerged.Count; i++)
