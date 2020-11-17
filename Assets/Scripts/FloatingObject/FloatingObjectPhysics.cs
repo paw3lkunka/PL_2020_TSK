@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -32,15 +33,33 @@ public class FloatingObjectPhysics : MonoBehaviour
     [SerializeField]private Fluid fluid;
     
     private Rigidbody rigidbody;
+    private MeshCollider meshCollider;
     private FloatingObjectMeshParser meshParser;
+
+    private MeshFilter meshFilter;
+    private FloatingObjectMesh mesh;
 
     private void Awake()
     {
         rigidbody = gameObject.GetComponent<Rigidbody>() as Rigidbody;
+        meshCollider = gameObject.GetComponent<MeshCollider>() as MeshCollider;
         meshParser = gameObject.GetComponent<FloatingObjectMeshParser>() as FloatingObjectMeshParser;
+
+        meshFilter = gameObject.GetComponent<MeshFilter>() as MeshFilter;
+        mesh = gameObject.GetComponent<FloatingObjectMesh>() as FloatingObjectMesh;
 
         rigidbody.mass = mass;
         rigidbody.centerOfMass = centerOfGravity;
+    }
+
+    private void OnEnable()
+    {
+        mesh.OnMeshChange += ChangeColliderMesh_OnMeshChange;
+    }
+    
+    private void OnDisable()
+    {
+        mesh.OnMeshChange -= ChangeColliderMesh_OnMeshChange;
     }
 
     private void FixedUpdate()
@@ -79,5 +98,10 @@ public class FloatingObjectPhysics : MonoBehaviour
         float Rn = fluid.Density * rigidbody.velocity.magnitude * fluid.kinematicViscosity;
         float temp = Mathf.Log10(Rn) - 2;
         return 0.075f / (temp * temp);
+    }
+
+    private void ChangeColliderMesh_OnMeshChange(object sender, EventArgs e)
+    {
+        meshCollider.sharedMesh = meshFilter.mesh;
     }
 }

@@ -60,6 +60,11 @@ public class FloatingObjectMesh : MonoBehaviour
         meshFilter = gameObject.GetComponent<MeshFilter>() as MeshFilter;
 
         transform.localScale = new Vector3(scale, scale, scale);
-        meshFilter.mesh = meshFilter.mesh = availableMeshes[currentMeshIndex];
+        meshFilter.mesh = availableMeshes[currentMeshIndex];
+    }
+
+    private void Start()
+    {
+        OnMeshChange.Invoke(this, EventArgs.Empty);
     }
 }
