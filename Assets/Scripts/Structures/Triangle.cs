@@ -15,6 +15,10 @@ public struct Triangle
     public float hC;
     public float hCenter;
 
+    public Vector3 velocity;
+    public Vector3 normalizedVelocity;
+    public float cosTheta;
+
     public Triangle(Vector3 a, Vector3 b, Vector3 c)
     {
         this.a = a;
@@ -29,6 +33,10 @@ public struct Triangle
         hB = 0.0f;
         hC = 0.0f;
         hCenter = 0.0f;
+
+        velocity = new Vector3();
+        normalizedVelocity = new Vector3();
+        cosTheta = 0.0f;
     }
 
     public Triangle(Vector3 a, Vector3 b, Vector3 c, float hA, float hB, float hC)
@@ -58,5 +66,12 @@ public struct Triangle
     public static Vector3 GetCenterVelocity(Vector3 triangleCenter, Vector3 objectCenterOfGravity, Vector3 objectVelocity, Vector3 objectAngularVelocity)
     {
         return objectVelocity + Vector3.Cross(objectAngularVelocity, triangleCenter - objectCenterOfGravity);
+    }
+
+    public void CalculateAdditionalValues(Vector3 objectCenterOfGravity, Vector3 objectVelocity, Vector3 objectAngularVelocity)
+    {
+        velocity = GetCenterVelocity(center, objectCenterOfGravity, objectVelocity, objectAngularVelocity);
+        normalizedVelocity = velocity.normalized;
+        cosTheta = Vector3.Dot(normalizedVelocity, normal);
     }
 }

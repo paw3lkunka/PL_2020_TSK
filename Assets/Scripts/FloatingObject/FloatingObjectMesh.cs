@@ -16,6 +16,7 @@ public class FloatingObjectMesh : MonoBehaviour
         {
             currentMeshIndex = value;
             meshFilter.mesh = availableMeshes[currentMeshIndex];
+            transform.position = new Vector3(0.0f, 3.0f, 0.0f);
             OnMeshChange?.Invoke(this, EventArgs.Empty);
         }
     }
@@ -28,7 +29,7 @@ public class FloatingObjectMesh : MonoBehaviour
         {
             scale = value;
             transform.localScale = new Vector3(scale, scale, scale);
-            OnMeshChange?.Invoke(this, EventArgs.Empty);
+            // OnMeshChange?.Invoke(this, EventArgs.Empty);
         }
     }
 

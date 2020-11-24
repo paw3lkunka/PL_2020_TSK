@@ -32,6 +32,11 @@ public class FluidSurfaceMesh : MonoBehaviour
         }
     }
 
+    public void SetResolution(float value)
+    {
+        Resolution = (int)value;
+    }
+
     private bool surfaceModified = true;
 
     [HideInInspector]public Vector3[] vertices;
@@ -64,11 +69,11 @@ public class FluidSurfaceMesh : MonoBehaviour
         mesh = new Mesh();
         meshFilter.mesh = mesh;
 
-        GameObject primitive = GameObject.CreatePrimitive(PrimitiveType.Plane);
-        primitive.SetActive(false);
-        Material diffuse = primitive.GetComponent<MeshRenderer>().sharedMaterial;
-        DestroyImmediate(primitive);
-        meshRenderer.material = diffuse;
+        // GameObject primitive = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        // primitive.SetActive(false);
+        // Material diffuse = primitive.GetComponent<MeshRenderer>().sharedMaterial;
+        // DestroyImmediate(primitive);
+        // meshRenderer.material = diffuse;
     }
 
     private void Update()
@@ -112,15 +117,29 @@ public class FluidSurfaceMesh : MonoBehaviour
             }
         }
 
-        for(int i = 0; i < resolution * (resolution + 1) - 1; i++)
-        {
-            indices[i * 6] = i;
-            indices[i * 6 + 1] = i + resolution + 2;
-            indices[i * 6 + 2] = i + 1;
+        // for(int i = 0; i < resolution * (resolution + 1) - 1; i++)
+        // {
+        //     indices[i * 6] = i;
+        //     indices[i * 6 + 1] = i + resolution + 2;
+        //     indices[i * 6 + 2] = i + 1;
 
-            indices[i * 6 + 3] = i;
-            indices[i * 6 + 4] = i + resolution + 1;
-            indices[i * 6 + 5] = i + resolution + 2;
+        //     indices[i * 6 + 3] = i;
+        //     indices[i * 6 + 4] = i + resolution + 1;
+        //     indices[i * 6 + 5] = i + resolution + 2;
+        // }
+
+        for(int i = 0, index = 0; i < resolution; i++)
+        {
+            for(int j = 0; j < resolution; j++, index += 6)
+            {
+                indices[index] = (i * (resolution + 1)) + j;
+                indices[index + 1] = ((i + 1) * (resolution + 1)) + j;
+                indices[index + 2] = ((i + 1) * (resolution + 1)) + j + 1;
+
+                indices[index + 3] = (i * (resolution + 1)) + j;
+                indices[index + 4] = ((i + 1) * (resolution + 1)) + j + 1;
+                indices[index + 5] = (i * (resolution + 1)) + j + 1;
+            }
         }
     }
 }

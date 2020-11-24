@@ -28,11 +28,31 @@ public class FloatingObjectPhysics : MonoBehaviour
         }
     }
 
+    public void SetCenterOfGravityX(string value)
+    {
+        CenterOfGravity = new Vector3(float.Parse(value), centerOfGravity.y, centerOfGravity.z);
+    }
+
+    public void SetCenterOfGravityY(string value)
+    {
+        CenterOfGravity = new Vector3(centerOfGravity.x, float.Parse(value), centerOfGravity.z);
+    }
+    
+    public void SetCenterOfGravityZ(string value)
+    {
+        CenterOfGravity = new Vector3(centerOfGravity.x, centerOfGravity.y, float.Parse(value));
+    }
+
     private float CfRn = 0.0f;
+
+    public bool IsBuoyancyForce { get; set; }
+    public bool IsViscousDrag { get; set; }
+    public bool IsPressureDrag { get; set; }
+    public bool IsSlammingForce { get; set; }
 
     [SerializeField]private Fluid fluid;
     
-    private Rigidbody rigidbody;
+    private new Rigidbody rigidbody;
     private MeshCollider meshCollider;
     private FloatingObjectMeshParser meshParser;
 
@@ -50,6 +70,11 @@ public class FloatingObjectPhysics : MonoBehaviour
 
         rigidbody.mass = mass;
         rigidbody.centerOfMass = centerOfGravity;
+        
+        IsBuoyancyForce = true;
+        IsViscousDrag = true;
+        IsPressureDrag = true;
+        IsSlammingForce = true;
     }
 
     private void OnEnable()
@@ -64,28 +89,55 @@ public class FloatingObjectPhysics : MonoBehaviour
 
     private void FixedUpdate()
     {
-        float CfRn = ViscousResistanceCoefficient();
+        RecalculateViscousityResistanceCoefficient();
 
-        for(int i = 0; i < meshParser.submerged.Count; i++)
+        Triangle[] submergedTriangles = meshParser.submerged.ToArray();
+        for(int i = 0; i < submergedTriangles.Length; i++)
         {
-            rigidbody.AddForceAtPosition(BuoyancyForce(meshParser.submerged[i]), meshParser.submerged[i].center);
+            submergedTriangles[i].CalculateAdditionalValues(rigidbody.centerOfMass, rigidbody.velocity, rigidbody.angularVelocity);
+
+            Vector3 force = new Vector3(0.0f, 0.0f, 0.0f);
+            force += IsBuoyancyForce ? BuoyancyForce(submergedTriangles[i]) : new Vector3(0.0f, 0.0f, 0.0f);
+            force += IsViscousDrag ? ViscousDragForce(submergedTriangles[i]) : new Vector3(0.0f, 0.0f, 0.0f);
+            force += IsPressureDrag ? PressureDragForce(submergedTriangles[i]) : new Vector3(0.0f, 0.0f, 0.0f);
+
+            rigidbody.AddForceAtPosition(force, submergedTriangles[i].center);
         }
     }
 
     private Vector3 BuoyancyForce(Triangle triangle)
     {
-        return fluid.Density * Physics.gravity.magnitude * triangle.hCenter * triangle.normal * triangle.area;
+        Vector3 force = fluid.Density * Physics.gravity.magnitude * triangle.hCenter * triangle.normal * triangle.area;
+        return new Vector3(0.0f, Mathf.Max(0.0f, force.y), 0.0f);
     }
 
     private Vector3 ViscousDragForce(Triangle triangle)
     {
         float speed = rigidbody.velocity.magnitude;
-        return new Vector3() * (fluid.Density * speed * speed * triangle.area * CfRn) / 2.0f;
+
+        Vector3 velocityTangent = Vector3.Cross(triangle.normal, Vector3.Cross(triangle.velocity, triangle.normal) / speed) / speed;
+        Vector3 vF = -triangle.velocity.magnitude * velocityTangent.normalized;
+        
+        return (fluid.Density * vF * vF.magnitude * triangle.area * CfRn) / 2.0f;
     }
 
     private Vector3 PressureDragForce(Triangle triangle)
     {
-        return new Vector3();
+        float speed = triangle.velocity.magnitude;
+        Vector3 force = new Vector3(0.0f, 0.0f, 0.0f);
+
+        if(triangle.cosTheta > 0.0f)
+        {
+            // force = -10.0f * speed * (1 + speed) * triangle.area * Mathf.Sqrt(triangle.cosTheta) * triangle.normal;
+            force = -2500.0f * triangle.area * Mathf.Sqrt(triangle.cosTheta) * triangle.normal;
+        }
+        else
+        {
+            // force = 10.0f * speed * (1 + speed) * triangle.area * Mathf.Sqrt(triangle.cosTheta) * triangle.normal;
+            force = 2500.0f * triangle.area * Mathf.Sqrt(Mathf.Abs(triangle.cosTheta)) * triangle.normal;
+        }
+
+        return force;
     }
 
     private Vector3 SlammingForce(Triangle triangle)
@@ -93,11 +145,11 @@ public class FloatingObjectPhysics : MonoBehaviour
         return new Vector3();
     }
 
-    private float ViscousResistanceCoefficient()
+    private void RecalculateViscousityResistanceCoefficient()
     {
         float Rn = fluid.Density * rigidbody.velocity.magnitude * fluid.kinematicViscosity;
         float temp = Mathf.Log10(Rn) - 2;
-        return 0.075f / (temp * temp);
+        CfRn =  0.075f / (temp * temp);
     }
 
     private void ChangeColliderMesh_OnMeshChange(object sender, EventArgs e)

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -29,7 +30,7 @@ public class FloatingObjectMeshParser : MonoBehaviour
         Vector3[] vertices = mesh.Vertices;
         int[] indices = mesh.Indices;
         Vector3[] surfaceVertices = surfaceMesh.Vertices;
-        
+
         RecalculateVerticesHeights(vertices, surfaceVertices);
         RecalculateSubmergedTriangles(vertices, indices, surfaceVertices);
     }
@@ -41,7 +42,7 @@ public class FloatingObjectMeshParser : MonoBehaviour
         for(int i = 0; i < mesh.VertexCount; i++)
         {
             // verticesHeights[i] = CalculateVertexHeight(vertices[i], surfaceVertices);
-            verticesHeights[i] = vertices[i].y - surfaceWaves.SurfaceHeightForVertex(vertices[i]);
+            verticesHeights[i] = vertices[i].y - surfaceWaves.SurfaceHeightForVertex(vertices[i], surfaceWaves.currentTime);
         }
     }
 
@@ -81,24 +82,25 @@ public class FloatingObjectMeshParser : MonoBehaviour
 
         for(int i = 0; i < mesh.IndicesCount; i += 3)
         {
-            KeyValuePair<Vector3, float>[] meshTriangle = new KeyValuePair<Vector3, float>[3];
-            meshTriangle[0] = new KeyValuePair<Vector3, float>(vertices[indices[i]], verticesHeights[indices[i]]);
-            meshTriangle[1] = new KeyValuePair<Vector3, float>(vertices[indices[i + 1]], verticesHeights[indices[i + 1]]);
-            meshTriangle[2] = new KeyValuePair<Vector3, float>(vertices[indices[i + 2]], verticesHeights[indices[i + 2]]);
+            Tuple<int, Vector3, float>[] tr = new Tuple<int, Vector3, float>[3];
+            tr[0] = new Tuple<int, Vector3, float>(0, vertices[indices[i]], verticesHeights[indices[i]]);
+            tr[1] = new Tuple<int, Vector3, float>(1, vertices[indices[i + 1]], verticesHeights[indices[i + 1]]);
+            tr[2] = new Tuple<int, Vector3, float>(2, vertices[indices[i + 2]], verticesHeights[indices[i + 2]]);
 
-            meshTriangle = meshTriangle.OrderByDescending(o => o.Value).ToArray();
+            tr = tr.OrderByDescending(o => o.Item3).ToArray();
             
-            Vector3 h = meshTriangle[0].Key;
-            Vector3 m = meshTriangle[1].Key;
-            Vector3 l = meshTriangle[2].Key;
+            Vector3 h = tr[0].Item2;
+            Vector3 m = tr[1].Item2;
+            Vector3 l = tr[2].Item2;
 
-            float hH = meshTriangle[0].Value;
-            float hM = meshTriangle[1].Value;
-            float hL = meshTriangle[2].Value;
-
+            float hH = tr[0].Item3;
+            float hM = tr[1].Item3;
+            float hL = tr[2].Item3;
+            
             if(hH <= 0.0f)
             {
-                submerged.Add(new Triangle(h, m, l, hH, hM, hL));
+                // tr = tr.OrderBy(o => o.Item1).ToArray();
+                submerged.Add(new Triangle(tr[0].Item2, tr[1].Item2, tr[2].Item2, tr[0].Item3, tr[1].Item3, tr[2].Item3));
             }
             else if(hM <= 0.0f)
             {
@@ -108,12 +110,31 @@ public class FloatingObjectMeshParser : MonoBehaviour
                 Vector3 iL = l + (h - l) * tL;
                 // float hIM = CalculateVertexHeight(iM, surfaceVertices);
                 // float hIL = CalculateVertexHeight(iL, surfaceVertices);
-                float hIM = iM.y - surfaceWaves.SurfaceHeightForVertex(iM);
-                float hIL = iL.y - surfaceWaves.SurfaceHeightForVertex(iL);
+                float hIM = iM.y - surfaceWaves.SurfaceHeightForVertex(iM, surfaceWaves.currentTime);
+                float hIL = iL.y - surfaceWaves.SurfaceHeightForVertex(iL, surfaceWaves.currentTime);
 
-                submerged.Add(new Triangle(m, iM, l, hM, hIM, hL));
+                Tuple<int, Vector3, float>[] subTr = new Tuple<int, Vector3, float>[3];
+
+                submerged.Add(new Triangle(l, m, iM, hL, hM, hIM));
+                // subTr[0] = new Tuple<int, Vector3, float>(tr[1].Item1, m, hM);
+                // subTr[1] = new Tuple<int, Vector3, float>(tr[2].Item1, l, hL);
+                // subTr[2] = new Tuple<int, Vector3, float>(tr[0].Item1, iM, hIM);
+                // subTr = subTr.OrderBy(o => o.Item1).ToArray();
+                // submerged.Add(new Triangle(subTr[0].Item2, subTr[1].Item2, subTr[2].Item2, subTr[0].Item3, subTr[1].Item3, subTr[2].Item3));
+
                 submerged.Add(new Triangle(l, iL, iM, hL, hIL, hIM));
+                // subTr[0] = new Tuple<int, Vector3, float>(tr[2].Item1, l, hL);
+                // subTr[1] = new Tuple<int, Vector3, float>(tr[2].Item1, iL, hIL);
+                // subTr[2] = new Tuple<int, Vector3, float>(tr[1].Item1, iM, hIM);
+                // subTr = subTr.OrderBy(o => o.Item1).ToArray();
+                // submerged.Add(new Triangle(subTr[0].Item2, subTr[1].Item2, subTr[2].Item2, subTr[0].Item3, subTr[1].Item3, subTr[2].Item3));
+
                 // surfaced.Add(new Triangle(h, iM, iL, hH, hIM, hIL));
+                // subTr[0] = new Tuple<int, Vector3, float>(tr[0].Item1, h, hH);
+                // subTr[1] = new Tuple<int, Vector3, float>(tr[1].Item1, iM, hIM);
+                // subTr[2] = new Tuple<int, Vector3, float>(tr[2].Item1, iL, hIL);
+                // subTr = subTr.OrderBy(o => o.Item1).ToArray();
+                // surfaced.Add(new Triangle(subTr[0].Item2, subTr[1].Item2, subTr[2].Item2, subTr[0].Item3, subTr[1].Item3, subTr[2].Item3));
             }
             else if(hL <= 0.0f)
             {
@@ -123,16 +144,36 @@ public class FloatingObjectMeshParser : MonoBehaviour
                 Vector3 jH = l + (h -l) * tH;
                 // float hJM = CalculateVertexHeight(jM, surfaceVertices);
                 // float hJH = CalculateVertexHeight(jH, surfaceVertices);
-                float hJM = jM.y - surfaceWaves.SurfaceHeightForVertex(jM);
-                float hJH = jH.y - surfaceWaves.SurfaceHeightForVertex(jH); 
-                
+                float hJM = jM.y - surfaceWaves.SurfaceHeightForVertex(jM, surfaceWaves.currentTime);
+                float hJH = jH.y - surfaceWaves.SurfaceHeightForVertex(jH, surfaceWaves.currentTime); 
+
+                Tuple<int, Vector3, float>[] subTr = new Tuple<int, Vector3, float>[3];
+
                 submerged.Add(new Triangle(l, jM, jH, hL, hJM, hJH));
+                // subTr[0] = new Tuple<int, Vector3, float>(tr[2].Item1, l, hL);
+                // subTr[1] = new Tuple<int, Vector3, float>(tr[1].Item1, jM, hJM);
+                // subTr[2] = new Tuple<int, Vector3, float>(tr[0].Item1, jH, hJH);
+                // subTr = subTr.OrderBy(o => o.Item1).ToArray();
+                // submerged.Add(new Triangle(subTr[0].Item2, subTr[1].Item2, subTr[2].Item2, subTr[0].Item3, subTr[1].Item3, subTr[2].Item3));
+
                 // surfaced.Add(new Triangle(h, jH, m, hH, hJH, hM));
+                // subTr[0] = new Tuple<int, Vector3, float>(tr[0].Item1, h, hH);
+                // subTr[1] = new Tuple<int, Vector3, float>(tr[1].Item1, m, hM);
+                // subTr[2] = new Tuple<int, Vector3, float>(tr[0].Item1, jH, hJH);
+                // subTr = subTr.OrderBy(o => o.Item1).ToArray();
+                // surfaced.Add(new Triangle(subTr[0].Item2, subTr[1].Item2, subTr[2].Item2, subTr[0].Item3, subTr[1].Item3, subTr[2].Item3));
+
                 // surfaced.Add(new Triangle(h, m, jM, hH, hM, hJM));
+                // subTr[0] = new Tuple<int, Vector3, float>(tr[0].Item1, h, hH);
+                // subTr[1] = new Tuple<int, Vector3, float>(tr[1].Item1, m, hM);
+                // subTr[2] = new Tuple<int, Vector3, float>(tr[1].Item1, jM, hJM);
+                // subTr = subTr.OrderBy(o => o.Item1).ToArray();
+                // surfaced.Add(new Triangle(subTr[0].Item2, subTr[1].Item2, subTr[2].Item2, subTr[0].Item3, subTr[1].Item3, subTr[2].Item3));
             }
             else
             {
-                // surfaced.Add(new Triangle(h, m, l, hH, hM, hL));
+                // tr = tr.OrderBy(o => o.Item1).ToArray();
+                // surfaced.Add(new Triangle(tr[0].Item2, tr[1].Item2, tr[2].Item2, tr[0].Item3, tr[1].Item3, tr[2].Item3));
             }
         }
     }

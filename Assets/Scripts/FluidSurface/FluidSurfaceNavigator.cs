@@ -29,7 +29,7 @@ public class FluidSurfaceNavigator : MonoBehaviour
         objectMesh.OnMeshChange -= SurfaceSizeControl_OnMeshChange;
     }
 
-    private void FixedUpdate()
+    private void LateUpdate()
     {
         transform.position = new Vector3(objectTransform.position.x, 0.0f, objectTransform.position.z);
     }

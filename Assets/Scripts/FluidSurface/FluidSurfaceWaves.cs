@@ -11,6 +11,7 @@ public class FluidSurfaceWaves : MonoBehaviour
     public float offset = 0.0f;
 
     private FluidSurfaceMesh mesh;
+    [HideInInspector]public float currentTime;
 
     private void Start()
     {
@@ -19,17 +20,38 @@ public class FluidSurfaceWaves : MonoBehaviour
 
     private void FixedUpdate()
     {
+        currentTime = Time.timeSinceLevelLoad;
         for(int i = 0; i < (mesh.Resolution + 1) * (mesh.Resolution + 1); i++)
         {
-            mesh.vertices[i].y = SurfaceHeightForVertex(mesh.vertices[i]);
+            mesh.vertices[i].y = SurfaceHeightForVertex(mesh.vertices[i], currentTime);
         }
     }
 
-    public float SurfaceHeightForVertex(Vector3 vertex)
+    public float SurfaceHeightForVertex(Vector3 vertex, float time)
     {
-        float pX = vertex.x * scale + (Time.timeSinceLevelLoad * speed) + offset;
-        float pZ = vertex.z * scale + (Time.timeSinceLevelLoad * speed) + offset;
+        float pX = vertex.x * scale + (time * speed) + offset;
+        float pZ = vertex.z * scale + (time * speed) + offset;
         
         return Mathf.PerlinNoise(pX, pZ) * height;
+    }
+
+    public void SetScale(float value)
+    {
+        scale = value;
+    }
+
+    public void SetSpeed(float value)
+    {
+        speed = value;
+    }
+
+    public void SetHeight(float value)
+    {
+        height = value;
+    }
+
+    public void SetOffset(float value)
+    {
+        offset = value;
     }
 }
