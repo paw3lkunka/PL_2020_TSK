@@ -31,7 +31,8 @@ public class VariableSlider : MonoBehaviour
 
     public void UpdateSlider(string value)
     {
-        float parsedValue = float.Parse(value);
+        CultureInfo cultureInfo = new CultureInfo("en-US");
+        float parsedValue = float.Parse(value, cultureInfo);
 
         if(parsedValue < slider.minValue)
         {
