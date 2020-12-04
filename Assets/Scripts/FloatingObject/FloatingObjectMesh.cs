@@ -29,7 +29,7 @@ public class FloatingObjectMesh : MonoBehaviour
         {
             scale = value;
             transform.localScale = new Vector3(scale, scale, scale);
-            // OnMeshChange?.Invoke(this, EventArgs.Empty);
+            OnMeshChange?.Invoke(this, EventArgs.Empty);
         }
     }
 

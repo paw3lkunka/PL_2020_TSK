@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public struct Triangle
+public class Triangle
 {
     public Vector3 a;
     public Vector3 b;
@@ -68,7 +68,7 @@ public struct Triangle
         return objectVelocity + Vector3.Cross(objectAngularVelocity, triangleCenter - objectCenterOfGravity);
     }
 
-    public void CalculateAdditionalValues(Vector3 objectCenterOfGravity, Vector3 objectVelocity, Vector3 objectAngularVelocity)
+    public virtual void CalculateAdditionalValues(Vector3 objectCenterOfGravity, Vector3 objectVelocity, Vector3 objectAngularVelocity)
     {
         velocity = GetCenterVelocity(center, objectCenterOfGravity, objectVelocity, objectAngularVelocity);
         normalizedVelocity = velocity.normalized;

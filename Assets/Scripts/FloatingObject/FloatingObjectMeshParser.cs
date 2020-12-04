@@ -9,6 +9,9 @@ public class FloatingObjectMeshParser : MonoBehaviour
 {
     [HideInInspector]public List<Triangle> submerged;
     [HideInInspector]public List<Triangle> surfaced;
+    
+    [HideInInspector]public float totalArea;
+    [HideInInspector]public Polygon[] polygons;
 
     private float[] verticesHeights;
 
@@ -24,7 +27,26 @@ public class FloatingObjectMeshParser : MonoBehaviour
         mesh = gameObject.GetComponent<FloatingObjectMesh>() as FloatingObjectMesh;
         surfaceWaves = surfaceMesh.gameObject.GetComponent<FluidSurfaceWaves>() as FluidSurfaceWaves;
     }
-    
+
+    private void Start()
+    {
+        polygons = new Polygon[mesh.IndicesCount / 3];
+        for(int i = 0; i < mesh.IndicesCount / 3; i++)
+        {
+            polygons[i] = new Polygon();
+        }
+    }
+
+    private void OnEnable()
+    {
+        mesh.OnMeshChange += UpdatePolygons_OnMeshChange;
+    }
+
+    private void OnDisable()
+    {
+        mesh.OnMeshChange -= UpdatePolygons_OnMeshChange;
+    }
+
     private void FixedUpdate()
     {
         Vector3[] vertices = mesh.Vertices;
@@ -48,37 +70,38 @@ public class FloatingObjectMeshParser : MonoBehaviour
 
     private float CalculateVertexHeight(Vector3 vertex, Vector3[]  surfaceVertices)
     {
-            int i = Mathf.FloorToInt((vertex.x - surfaceVertices[0].x) / (float)surfaceMesh.Resolution);
-            int j = Mathf.FloorToInt((vertex.z - surfaceVertices[0].z) / (float)surfaceMesh.Resolution);
+        int i = Mathf.FloorToInt((vertex.x - surfaceVertices[0].x) / (float)surfaceMesh.Resolution);
+        int j = Mathf.FloorToInt((vertex.z - surfaceVertices[0].z) / (float)surfaceMesh.Resolution);
 
-            float innerX = (vertex.x - surfaceVertices[0].x) - (float)i * (surfaceMesh.Size / surfaceMesh.Resolution);
-            float innerZ = (vertex.z - surfaceVertices[0].z) - (float)j * (surfaceMesh.Size / surfaceMesh.Resolution);
+        float innerX = (vertex.x - surfaceVertices[0].x) - (float)i * (surfaceMesh.Size / surfaceMesh.Resolution);
+        float innerZ = (vertex.z - surfaceVertices[0].z) - (float)j * (surfaceMesh.Size / surfaceMesh.Resolution);
 
-            Vector3 a, b, c;
+        Vector3 a, b, c;
 
-            if(innerX >= innerZ)
-            {
-                a = surfaceVertices[i * (surfaceMesh.Resolution + 1) + j];
-                b = surfaceVertices[(i + 1) * (surfaceMesh.Resolution + 1) + (j + 1)];
-                c = surfaceVertices[i * (surfaceMesh.Resolution + 1) + (j + 1)];
-            }
-            else
-            {
-                a = surfaceVertices[i * (surfaceMesh.Resolution + 1) + j];
-                b = surfaceVertices[(i + 1) * (surfaceMesh.Resolution + 1) + (j + 1)];
-                c = surfaceVertices[(i + 1) * (surfaceMesh.Resolution + 1) + j];
-            }
+        if(innerX >= innerZ)
+        {
+            a = surfaceVertices[i * (surfaceMesh.Resolution + 1) + j];
+            b = surfaceVertices[(i + 1) * (surfaceMesh.Resolution + 1) + (j + 1)];
+            c = surfaceVertices[i * (surfaceMesh.Resolution + 1) + (j + 1)];
+        }
+        else
+        {
+            a = surfaceVertices[i * (surfaceMesh.Resolution + 1) + j];
+            b = surfaceVertices[(i + 1) * (surfaceMesh.Resolution + 1) + (j + 1)];
+            c = surfaceVertices[(i + 1) * (surfaceMesh.Resolution + 1) + j];
+        }
 
-            Vector3 abcVec = Vector3.Cross(b - a, c - a);
-            float d = Vector3.Dot(abcVec, a);
+        Vector3 abcVec = Vector3.Cross(b - a, c - a);
+        float d = Vector3.Dot(abcVec, a);
 
-            return vertex.y - (d - abcVec.x * vertex.x - abcVec.z * vertex.z) / abcVec.y;
+        return vertex.y - (d - abcVec.x * vertex.x - abcVec.z * vertex.z) / abcVec.y;
     }
 
     private void RecalculateSubmergedTriangles(Vector3[] vertices, int[] indices, Vector3[] surfaceVertices)
     {
         submerged.Clear();
         surfaced.Clear();
+        totalArea = 0.0f;
 
         for(int i = 0; i < mesh.IndicesCount; i += 3)
         {
@@ -93,6 +116,9 @@ public class FloatingObjectMeshParser : MonoBehaviour
             Vector3 m = tr[1].Item2;
             Vector3 l = tr[2].Item2;
 
+            polygons[i / 3].UpdateVertices(h, m, l);
+            totalArea += polygons[i / 3].area;
+
             float hH = tr[0].Item3;
             float hM = tr[1].Item3;
             float hL = tr[2].Item3;
@@ -100,7 +126,9 @@ public class FloatingObjectMeshParser : MonoBehaviour
             if(hH <= 0.0f)
             {
                 // tr = tr.OrderBy(o => o.Item1).ToArray();
-                submerged.Add(new Triangle(tr[0].Item2, tr[1].Item2, tr[2].Item2, tr[0].Item3, tr[1].Item3, tr[2].Item3));
+                Triangle submergedTriangle = new Triangle(tr[0].Item2, tr[1].Item2, tr[2].Item2, tr[0].Item3, tr[1].Item3, tr[2].Item3);
+                submerged.Add(submergedTriangle);
+                polygons[i / 3].submergedArea = submergedTriangle.area;
             }
             else if(hM <= 0.0f)
             {
@@ -115,14 +143,16 @@ public class FloatingObjectMeshParser : MonoBehaviour
 
                 Tuple<int, Vector3, float>[] subTr = new Tuple<int, Vector3, float>[3];
 
-                submerged.Add(new Triangle(l, m, iM, hL, hM, hIM));
+                Triangle firstSubmergedTriangle = new Triangle(l, m, iM, hL, hM, hIM);
+                submerged.Add(firstSubmergedTriangle);
                 // subTr[0] = new Tuple<int, Vector3, float>(tr[1].Item1, m, hM);
                 // subTr[1] = new Tuple<int, Vector3, float>(tr[2].Item1, l, hL);
                 // subTr[2] = new Tuple<int, Vector3, float>(tr[0].Item1, iM, hIM);
                 // subTr = subTr.OrderBy(o => o.Item1).ToArray();
                 // submerged.Add(new Triangle(subTr[0].Item2, subTr[1].Item2, subTr[2].Item2, subTr[0].Item3, subTr[1].Item3, subTr[2].Item3));
 
-                submerged.Add(new Triangle(l, iL, iM, hL, hIL, hIM));
+                Triangle secondSubmergedTriangle = new Triangle(l, iL, iM, hL, hIL, hIM);
+                submerged.Add(secondSubmergedTriangle);
                 // subTr[0] = new Tuple<int, Vector3, float>(tr[2].Item1, l, hL);
                 // subTr[1] = new Tuple<int, Vector3, float>(tr[2].Item1, iL, hIL);
                 // subTr[2] = new Tuple<int, Vector3, float>(tr[1].Item1, iM, hIM);
@@ -135,6 +165,9 @@ public class FloatingObjectMeshParser : MonoBehaviour
                 // subTr[2] = new Tuple<int, Vector3, float>(tr[2].Item1, iL, hIL);
                 // subTr = subTr.OrderBy(o => o.Item1).ToArray();
                 // surfaced.Add(new Triangle(subTr[0].Item2, subTr[1].Item2, subTr[2].Item2, subTr[0].Item3, subTr[1].Item3, subTr[2].Item3));
+                
+                polygons[i / 3].submergedArea += firstSubmergedTriangle.area;
+                polygons[i / 3].submergedArea += secondSubmergedTriangle.area;
             }
             else if(hL <= 0.0f)
             {
@@ -149,7 +182,8 @@ public class FloatingObjectMeshParser : MonoBehaviour
 
                 Tuple<int, Vector3, float>[] subTr = new Tuple<int, Vector3, float>[3];
 
-                submerged.Add(new Triangle(l, jM, jH, hL, hJM, hJH));
+                Triangle submergedTriangle = new Triangle(l, jM, jH, hL, hJM, hJH);
+                submerged.Add(submergedTriangle);
                 // subTr[0] = new Tuple<int, Vector3, float>(tr[2].Item1, l, hL);
                 // subTr[1] = new Tuple<int, Vector3, float>(tr[1].Item1, jM, hJM);
                 // subTr[2] = new Tuple<int, Vector3, float>(tr[0].Item1, jH, hJH);
@@ -169,12 +203,23 @@ public class FloatingObjectMeshParser : MonoBehaviour
                 // subTr[2] = new Tuple<int, Vector3, float>(tr[1].Item1, jM, hJM);
                 // subTr = subTr.OrderBy(o => o.Item1).ToArray();
                 // surfaced.Add(new Triangle(subTr[0].Item2, subTr[1].Item2, subTr[2].Item2, subTr[0].Item3, subTr[1].Item3, subTr[2].Item3));
+
+                polygons[i / 3].submergedArea += submergedTriangle.area;
             }
             else
             {
                 // tr = tr.OrderBy(o => o.Item1).ToArray();
                 // surfaced.Add(new Triangle(tr[0].Item2, tr[1].Item2, tr[2].Item2, tr[0].Item3, tr[1].Item3, tr[2].Item3));
             }
+        }
+    }
+
+    public void UpdatePolygons_OnMeshChange(object sender, EventArgs e)
+    {
+        polygons = new Polygon[mesh.IndicesCount / 3];
+        for(int i = 0; i < mesh.IndicesCount / 3; i++)
+        {
+            polygons[i] = new Polygon();
         }
     }
 }

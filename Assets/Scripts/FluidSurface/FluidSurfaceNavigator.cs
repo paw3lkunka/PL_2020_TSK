@@ -21,12 +21,12 @@ public class FluidSurfaceNavigator : MonoBehaviour
 
     private void OnEnable()
     {
-        objectMesh.OnMeshChange += SurfaceSizeControl_OnMeshChange;
+        // objectMesh.OnMeshChange += SurfaceSizeControl_OnMeshChange;
     }
     
     private void OnDisable()
     {
-        objectMesh.OnMeshChange -= SurfaceSizeControl_OnMeshChange;
+        // objectMesh.OnMeshChange -= SurfaceSizeControl_OnMeshChange;
     }
 
     private void LateUpdate()

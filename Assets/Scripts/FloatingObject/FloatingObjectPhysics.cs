@@ -44,6 +44,17 @@ public class FloatingObjectPhysics : MonoBehaviour
     }
 
     private float CfRn = 0.0f;
+    private float GammaMax = 0.0f;
+
+    public float linearPressureCoefficient = 10.0f;
+    public float quadraticPressureCoefficient = 10.0f;
+    public float pressureFalloffPower = 0.5f;
+
+    public float linearSuctionCoefficient = 10.0f;
+    public float quadraticSuctionCoefficient = 10.0f;
+    public float suctionFalloffPower = 0.5f;
+
+    public float slammingPower = 2.0f;
 
     public bool IsBuoyancyForce { get; set; }
     public bool IsViscousDrag { get; set; }
@@ -103,6 +114,21 @@ public class FloatingObjectPhysics : MonoBehaviour
 
             rigidbody.AddForceAtPosition(force, submergedTriangles[i].center);
         }
+
+        if(IsSlammingForce)
+        {
+            Polygon[] polygons = meshParser.polygons;
+            for(int i = 0; i < polygons.Length; i++)
+            {
+                polygons[i].CalculateAdditionalValues(rigidbody.centerOfMass, rigidbody.velocity, rigidbody.angularVelocity);
+                GammaMax = polygons[i].gamma.magnitude > GammaMax ? polygons[i].gamma.magnitude : GammaMax;
+            }
+
+            for(int i = 0; i < polygons.Length; i++)
+            {
+                rigidbody.AddForceAtPosition(SlammingForce(polygons[i]), polygons[i].center);
+            }
+        }
     }
 
     private Vector3 BuoyancyForce(Triangle triangle)
@@ -123,26 +149,28 @@ public class FloatingObjectPhysics : MonoBehaviour
 
     private Vector3 PressureDragForce(Triangle triangle)
     {
-        float speed = triangle.velocity.magnitude;
+        // float speed = triangle.velocity.magnitude;
+        // float speed = 1.0f;
         Vector3 force = new Vector3(0.0f, 0.0f, 0.0f);
 
         if(triangle.cosTheta > 0.0f)
         {
-            // force = -10.0f * speed * (1 + speed) * triangle.area * Mathf.Sqrt(triangle.cosTheta) * triangle.normal;
+            // force = -speed * (linearPressureCoefficient + quadraticPressureCoefficient * speed) * triangle.area * Mathf.Pow(triangle.cosTheta, pressureFalloffPower) * triangle.normal;
             force = -2500.0f * triangle.area * Mathf.Sqrt(triangle.cosTheta) * triangle.normal;
         }
         else
         {
-            // force = 10.0f * speed * (1 + speed) * triangle.area * Mathf.Sqrt(triangle.cosTheta) * triangle.normal;
+            // force = speed * (linearSuctionCoefficient + quadraticSuctionCoefficient * speed) * triangle.area * Mathf.Pow(triangle.cosTheta, suctionFalloffPower) * triangle.normal;
             force = 2500.0f * triangle.area * Mathf.Sqrt(Mathf.Abs(triangle.cosTheta)) * triangle.normal;
         }
 
         return force;
     }
 
-    private Vector3 SlammingForce(Triangle triangle)
+    private Vector3 SlammingForce(Polygon polygon)
     {
-        return new Vector3();
+        Vector3 stopForce = rigidbody.mass * polygon.velocity * (2.0f * polygon.submergedArea) / meshParser.totalArea;
+        return Mathf.Pow(Mathf.Clamp(polygon.gamma.magnitude / GammaMax, 0.0f, 1.0f), slammingPower) * polygon.cosTheta * stopForce;
     }
 
     private void RecalculateViscousityResistanceCoefficient()
