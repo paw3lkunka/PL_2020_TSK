@@ -25,6 +25,7 @@ public class FloatingObjectPhysics : MonoBehaviour
         {
             centerOfGravity = value;
             rigidbody.centerOfMass = centerOfGravity;
+            centerOfGravityTransform.localPosition = centerOfGravity;
         }
     }
 
@@ -42,6 +43,8 @@ public class FloatingObjectPhysics : MonoBehaviour
     {
         CenterOfGravity = new Vector3(centerOfGravity.x, centerOfGravity.y, float.Parse(value));
     }
+
+    public Transform centerOfGravityTransform;
 
     private float CfRn = 0.0f;
     private float GammaMax = 0.0f;
@@ -61,6 +64,17 @@ public class FloatingObjectPhysics : MonoBehaviour
     public bool IsPressureDrag { get; set; }
     public bool IsSlammingForce { get; set; }
 
+    public bool isStopped = false;
+    public bool IsStopped
+    {
+        get => isStopped;
+        set
+        {
+            isStopped = value;
+            rigidbody.isKinematic = isStopped;
+        }
+    }
+
     [SerializeField]private Fluid fluid;
     
     private new Rigidbody rigidbody;
@@ -69,6 +83,11 @@ public class FloatingObjectPhysics : MonoBehaviour
 
     private MeshFilter meshFilter;
     private FloatingObjectMesh mesh;
+
+    [HideInInspector]public List<ForceVector> buoyancyForceVectors;
+    [HideInInspector]public List<ForceVector> viscosityDragVectors;
+    [HideInInspector]public List<ForceVector> pressureDragVectors;
+    [HideInInspector]public List<ForceVector> slammingForceVectors;
 
     private void Awake()
     {
@@ -86,6 +105,18 @@ public class FloatingObjectPhysics : MonoBehaviour
         IsViscousDrag = true;
         IsPressureDrag = true;
         IsSlammingForce = true;
+
+        buoyancyForceVectors = new List<ForceVector>();
+        viscosityDragVectors = new List<ForceVector>();
+        pressureDragVectors = new List<ForceVector>();
+        slammingForceVectors = new List<ForceVector>();
+
+        IsStopped = false;
+    }
+
+    private void Start()
+    {
+        centerOfGravityTransform.localPosition = centerOfGravity;
     }
 
     private void OnEnable()
@@ -100,6 +131,10 @@ public class FloatingObjectPhysics : MonoBehaviour
 
     private void FixedUpdate()
     {
+        buoyancyForceVectors.Clear();
+        viscosityDragVectors.Clear();
+        pressureDragVectors.Clear();
+        slammingForceVectors.Clear();
         RecalculateViscousityResistanceCoefficient();
 
         Triangle[] submergedTriangles = meshParser.submerged.ToArray();
@@ -108,11 +143,30 @@ public class FloatingObjectPhysics : MonoBehaviour
             submergedTriangles[i].CalculateAdditionalValues(rigidbody.centerOfMass, rigidbody.velocity, rigidbody.angularVelocity);
 
             Vector3 force = new Vector3(0.0f, 0.0f, 0.0f);
-            force += IsBuoyancyForce ? BuoyancyForce(submergedTriangles[i]) : new Vector3(0.0f, 0.0f, 0.0f);
-            force += IsViscousDrag ? ViscousDragForce(submergedTriangles[i]) : new Vector3(0.0f, 0.0f, 0.0f);
-            force += IsPressureDrag ? PressureDragForce(submergedTriangles[i]) : new Vector3(0.0f, 0.0f, 0.0f);
+            Vector3 forceBeginning = submergedTriangles[i].center;
+            
+            if(IsBuoyancyForce)
+            {
+                Vector3 buoyancy = BuoyancyForce(submergedTriangles[i]);
+                force += buoyancy;
+                buoyancyForceVectors.Add(new ForceVector(forceBeginning, buoyancy));
+            }
 
-            rigidbody.AddForceAtPosition(force, submergedTriangles[i].center);
+            if(IsViscousDrag)
+            {
+                Vector3 viscousDrag = ViscousDragForce(submergedTriangles[i]);
+                force += viscousDrag;
+                buoyancyForceVectors.Add(new ForceVector(forceBeginning, viscousDrag));
+            }
+
+            if(IsPressureDrag)
+            {
+                Vector3 pressureDrag = PressureDragForce(submergedTriangles[i]);
+                force += pressureDrag;
+                buoyancyForceVectors.Add(new ForceVector(forceBeginning, pressureDrag));
+            }
+
+            rigidbody.AddForceAtPosition(force, forceBeginning);
         }
 
         if(IsSlammingForce)
@@ -126,7 +180,9 @@ public class FloatingObjectPhysics : MonoBehaviour
 
             for(int i = 0; i < polygons.Length; i++)
             {
-                rigidbody.AddForceAtPosition(SlammingForce(polygons[i]), polygons[i].center);
+                Vector3 slamming = SlammingForce(polygons[i]);
+                slammingForceVectors.Add(new ForceVector(polygons[i].center, slamming));
+                rigidbody.AddForceAtPosition(slamming, polygons[i].center);
             }
         }
     }
@@ -170,7 +226,14 @@ public class FloatingObjectPhysics : MonoBehaviour
     private Vector3 SlammingForce(Polygon polygon)
     {
         Vector3 stopForce = rigidbody.mass * polygon.velocity * (2.0f * polygon.submergedArea) / meshParser.totalArea;
-        return Mathf.Pow(Mathf.Clamp(polygon.gamma.magnitude / GammaMax, 0.0f, 1.0f), slammingPower) * polygon.cosTheta * stopForce;
+        if (!float.IsNaN(transform.position.x) && !float.IsNaN(transform.position.y) && !float.IsNaN(transform.position.z))
+        {
+            return Mathf.Pow(Mathf.Clamp(polygon.gamma.magnitude / GammaMax, 0.0f, 1.0f), slammingPower) * polygon.cosTheta * stopForce;
+        }
+        else
+        {
+            return new Vector3(0.0f, 0.0f, 0.0f);
+        }
     }
 
     private void RecalculateViscousityResistanceCoefficient()
@@ -183,5 +246,10 @@ public class FloatingObjectPhysics : MonoBehaviour
     private void ChangeColliderMesh_OnMeshChange(object sender, EventArgs e)
     {
         meshCollider.sharedMesh = meshFilter.mesh;
+    }
+
+    public void ResetPosition()
+    {
+        transform.position = new Vector3(0.0f, 6.0f, 0.0f);
     }
 }

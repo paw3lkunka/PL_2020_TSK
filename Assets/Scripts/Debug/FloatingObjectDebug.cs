@@ -8,8 +8,15 @@ using UnityEngine;
 public class FloatingObjectDebug : MonoBehaviour
 {
     [SerializeField]private GameObject floatingObject;  
+    [SerializeField]private Color buoyancyColor;  
+    [SerializeField]private Color viscosityColor;  
+    [SerializeField]private Color pressureColor;  
+    [SerializeField]private Color slammingColor;  
+    [SerializeField]private Material material;
     private FloatingObjectMeshParser meshParser;
     private FloatingObjectPhysics physics;
+
+    [SerializeField]private float forcesLength = 0.01f;
     
     private Mesh submergedMesh;
     private MeshFilter meshFilter;
@@ -31,6 +38,22 @@ public class FloatingObjectDebug : MonoBehaviour
     private void FixedUpdate()
     {
         GenerateSubmergedMesh();
+    }
+
+    private void OnPostRender()
+    {
+        DrawForces();
+    }
+    
+    private void OnDrawGizmos()
+    {
+        GL.Begin(GL.LINES);
+        material.SetPass(0);
+        GL.Color(Color.red);
+        GL.Vertex3(0, 0, 0);
+        GL.Vertex3(2, 2, 2);
+        GL.End();
+        DrawForces();
     }
 
     private void GenerateSubmergedMesh()
@@ -64,10 +87,40 @@ public class FloatingObjectDebug : MonoBehaviour
 
         submergedMesh.RecalculateBounds();
         submergedMesh.RecalculateNormals();
+    }
 
-        for(int i = 0; i < submergedIndices.Length - 1; i++)
+    private void DrawForces()
+    {
+        GL.Begin(GL.LINES);
+        material.SetPass(0);
+        
+        foreach(ForceVector vector in physics.buoyancyForceVectors)
         {
-            // Debug.DrawLine(submergedVertices[submergedIndices[i]], submergedVertices[submergedIndices[i + 1]], Color.green);
+            DrawForceVector(vector, buoyancyColor);
         }
+
+        foreach(ForceVector vector in physics.viscosityDragVectors)
+        {
+            DrawForceVector(vector, viscosityColor);
+        }
+
+        foreach(ForceVector vector in physics.pressureDragVectors)
+        {
+            DrawForceVector(vector, pressureColor);
+        }
+
+        foreach(ForceVector vector in physics.slammingForceVectors)
+        {
+            DrawForceVector(vector, slammingColor);
+        }
+
+        GL.End();
+    }
+
+    private void DrawForceVector(ForceVector vector, Color color)
+    {
+        GL.Color(color);
+        GL.Vertex(vector.beginning);
+        GL.Vertex(vector.beginning + vector.offset * forcesLength);
     }
 }
