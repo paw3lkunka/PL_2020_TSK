@@ -31,17 +31,17 @@ public class FloatingObjectPhysics : MonoBehaviour
 
     public void SetCenterOfGravityX(string value)
     {
-        CenterOfGravity = new Vector3(float.Parse(value), centerOfGravity.y, centerOfGravity.z);
+        CenterOfGravity = new Vector3(Mathf.Clamp(float.Parse(value), 0.0f, 1.0f), centerOfGravity.y, centerOfGravity.z);
     }
 
     public void SetCenterOfGravityY(string value)
     {
-        CenterOfGravity = new Vector3(centerOfGravity.x, float.Parse(value), centerOfGravity.z);
+        CenterOfGravity = new Vector3(centerOfGravity.x, Mathf.Clamp(float.Parse(value), 0.0f, 1.0f), centerOfGravity.z);
     }
     
     public void SetCenterOfGravityZ(string value)
     {
-        CenterOfGravity = new Vector3(centerOfGravity.x, centerOfGravity.y, float.Parse(value));
+        CenterOfGravity = new Vector3(centerOfGravity.x, centerOfGravity.y, Mathf.Clamp(float.Parse(value), 0.0f, 1.0f));
     }
 
     public Transform centerOfGravityTransform;
@@ -205,19 +205,19 @@ public class FloatingObjectPhysics : MonoBehaviour
 
     private Vector3 PressureDragForce(Triangle triangle)
     {
-        // float speed = triangle.velocity.magnitude;
+        float speed = triangle.velocity.magnitude;
         // float speed = 1.0f;
         Vector3 force = new Vector3(0.0f, 0.0f, 0.0f);
 
         if(triangle.cosTheta > 0.0f)
         {
             // force = -speed * (linearPressureCoefficient + quadraticPressureCoefficient * speed) * triangle.area * Mathf.Pow(triangle.cosTheta, pressureFalloffPower) * triangle.normal;
-            force = -2500.0f * triangle.area * Mathf.Sqrt(triangle.cosTheta) * triangle.normal;
+            force = -(linearPressureCoefficient * speed + quadraticPressureCoefficient * speed * speed) * triangle.area * Mathf.Pow(triangle.cosTheta, pressureFalloffPower) * triangle.normal;
         }
         else
         {
             // force = speed * (linearSuctionCoefficient + quadraticSuctionCoefficient * speed) * triangle.area * Mathf.Pow(triangle.cosTheta, suctionFalloffPower) * triangle.normal;
-            force = 2500.0f * triangle.area * Mathf.Sqrt(Mathf.Abs(triangle.cosTheta)) * triangle.normal;
+            force = (linearSuctionCoefficient * speed + quadraticSuctionCoefficient * speed * speed) * triangle.area * Mathf.Pow(Mathf.Abs(triangle.cosTheta), pressureFalloffPower) * triangle.normal;
         }
 
         return force;
@@ -238,7 +238,7 @@ public class FloatingObjectPhysics : MonoBehaviour
 
     private void RecalculateViscousityResistanceCoefficient()
     {
-        float Rn = fluid.Density * rigidbody.velocity.magnitude * fluid.kinematicViscosity;
+        float Rn = fluid.Density * rigidbody.velocity.magnitude * fluid.KinematicViscosity;
         float temp = Mathf.Log10(Rn) - 2;
         CfRn =  0.075f / (temp * temp);
     }
@@ -251,5 +251,6 @@ public class FloatingObjectPhysics : MonoBehaviour
     public void ResetPosition()
     {
         transform.position = new Vector3(0.0f, 6.0f, 0.0f);
+        transform.rotation = Quaternion.Euler(0.0f, 0.0f, 0.0f);
     }
 }

@@ -11,7 +11,6 @@ public class Fluid : MonoBehaviour
         set 
         {
             density = value;
-            kinematicViscosity = dynamicViscosity / density;
         }
     }
 
@@ -22,9 +21,11 @@ public class Fluid : MonoBehaviour
         set
         {
             dynamicViscosity = value;
-            kinematicViscosity = dynamicViscosity / density;
         }
     }
 
-    [HideInInspector]public float kinematicViscosity;
+    [HideInInspector]public float KinematicViscosity
+    {
+        get => dynamicViscosity / density;
+    }
 }

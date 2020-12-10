@@ -112,15 +112,15 @@ public class FreeFlyCamera : MonoBehaviour
     // Apply requested cursor state
     private void SetCursorState()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            Cursor.lockState = _wantedMode = CursorLockMode.None;
-        }
+        // if (Input.GetKeyDown(KeyCode.Escape))
+        // {
+        //     Cursor.lockState = _wantedMode = CursorLockMode.None;
+        // }
 
         // if (Input.GetMouseButtonDown(0))
         if (Input.GetKeyDown(KeyCode.C))
         {
-            _wantedMode = CursorLockMode.Locked;
+            _wantedMode = _wantedMode == CursorLockMode.None ? CursorLockMode.Locked : CursorLockMode.None;
         }
 
         // Apply cursor state

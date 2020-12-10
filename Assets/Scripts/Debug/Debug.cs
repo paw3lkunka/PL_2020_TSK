@@ -4,19 +4,34 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
-public class FloatingObjectDebug : MonoBehaviour
+public class Debug : MonoBehaviour
 {
     [SerializeField]private GameObject floatingObject;  
+    [SerializeField]private GameObject submergedDebug;
+
+    [SerializeField]private Material material;
+    [SerializeField]private float forcesLength = 0.01f;
+
     [SerializeField]private Color buoyancyColor;  
     [SerializeField]private Color viscosityColor;  
     [SerializeField]private Color pressureColor;  
     [SerializeField]private Color slammingColor;  
-    [SerializeField]private Material material;
+    
+    private bool isSubmergedSurface;
+    public bool IsSubmergedSurface 
+    { 
+        get => isSubmergedSurface ;
+        set
+        {
+            isSubmergedSurface = value;
+            meshRenderer.enabled = value;
+        }
+    }
+    public bool IsForcesVectors { get; set; }
+    public bool IsBodyAcceleration { get; set; }
+
     private FloatingObjectMeshParser meshParser;
     private FloatingObjectPhysics physics;
-
-    [SerializeField]private float forcesLength = 0.01f;
     
     private Mesh submergedMesh;
     private MeshFilter meshFilter;
@@ -24,38 +39,32 @@ public class FloatingObjectDebug : MonoBehaviour
 
     private void Awake()
     {
-        meshFilter = gameObject.GetComponent<MeshFilter>() as MeshFilter;
-        meshRenderer = gameObject.GetComponent<MeshRenderer>() as MeshRenderer;
+        meshFilter = submergedDebug.GetComponent<MeshFilter>() as MeshFilter;
+        meshRenderer = submergedDebug.GetComponent<MeshRenderer>() as MeshRenderer;
 
         meshParser = floatingObject.GetComponent<FloatingObjectMeshParser>() as FloatingObjectMeshParser;
         physics = floatingObject.GetComponent<FloatingObjectPhysics>() as FloatingObjectPhysics;
 
         submergedMesh = new Mesh();
         meshFilter.mesh = submergedMesh;
-        
     }
 
     private void FixedUpdate()
     {
-        GenerateSubmergedMesh();
+        if(IsSubmergedSurface)
+        {
+            GenerateSubmergedMesh();
+        }
     }
 
     private void OnPostRender()
     {
-        DrawForces();
+        if(IsForcesVectors)
+        {
+            DrawForces();
+        }
     }
     
-    private void OnDrawGizmos()
-    {
-        GL.Begin(GL.LINES);
-        material.SetPass(0);
-        GL.Color(Color.red);
-        GL.Vertex3(0, 0, 0);
-        GL.Vertex3(2, 2, 2);
-        GL.End();
-        DrawForces();
-    }
-
     private void GenerateSubmergedMesh()
     {
         Triangle[] submergedTriangles = meshParser.submerged.ToArray();
@@ -96,31 +105,43 @@ public class FloatingObjectDebug : MonoBehaviour
         
         foreach(ForceVector vector in physics.buoyancyForceVectors)
         {
-            DrawForceVector(vector, buoyancyColor);
+            GL.Color(buoyancyColor);
+            DrawForceVector(vector);
         }
 
         foreach(ForceVector vector in physics.viscosityDragVectors)
         {
-            DrawForceVector(vector, viscosityColor);
+            GL.Color(viscosityColor);
+            DrawForceVector(vector);
         }
 
         foreach(ForceVector vector in physics.pressureDragVectors)
         {
-            DrawForceVector(vector, pressureColor);
+            GL.Color(pressureColor);
+            DrawForceVector(vector);
         }
 
         foreach(ForceVector vector in physics.slammingForceVectors)
         {
-            DrawForceVector(vector, slammingColor);
+            GL.Color(slammingColor);
+            DrawForceVector(vector);
         }
 
         GL.End();
     }
 
-    private void DrawForceVector(ForceVector vector, Color color)
+    private void DrawForceVector(ForceVector vector)
     {
-        GL.Color(color);
         GL.Vertex(vector.beginning);
         GL.Vertex(vector.beginning + vector.offset * forcesLength);
+    }
+
+    public void Exit()
+    {
+        #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+        #else
+            Application.Quit();
+        #endif
     }
 }
