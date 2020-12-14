@@ -166,7 +166,7 @@ public class FloatingObjectPhysics : MonoBehaviour
                 buoyancyForceVectors.Add(new ForceVector(forceBeginning, pressureDrag));
             }
 
-            force = force.magnitude < 10000.0f ? force : new Vector3(0.0f, 0.0f, 0.0f);
+            //force = force.magnitude < 10000.0f ? force : new Vector3(0.0f, 0.0f, 0.0f);
 
             rigidbody.AddForceAtPosition(force, forceBeginning);
         }
@@ -184,7 +184,6 @@ public class FloatingObjectPhysics : MonoBehaviour
             {
                 Vector3 slamming = SlammingForce(polygons[i]);
                 slammingForceVectors.Add(new ForceVector(polygons[i].center, slamming));
-                slamming = slamming.magnitude < 10000.0f ? slamming : new Vector3(0.0f, 0.0f, 0.0f);
                 rigidbody.AddForceAtPosition(slamming, polygons[i].center);
             }
         }
