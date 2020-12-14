@@ -31,17 +31,17 @@ public class FloatingObjectPhysics : MonoBehaviour
 
     public void SetCenterOfGravityX(string value)
     {
-        CenterOfGravity = new Vector3(Mathf.Clamp(float.Parse(value), 0.0f, 1.0f), centerOfGravity.y, centerOfGravity.z);
+        CenterOfGravity = new Vector3(Mathf.Clamp(float.Parse(value), -0.6f, 0.6f), centerOfGravity.y, centerOfGravity.z);
     }
 
     public void SetCenterOfGravityY(string value)
     {
-        CenterOfGravity = new Vector3(centerOfGravity.x, Mathf.Clamp(float.Parse(value), 0.0f, 1.0f), centerOfGravity.z);
+        CenterOfGravity = new Vector3(centerOfGravity.x, Mathf.Clamp(float.Parse(value), 0.0f, 0.8f), centerOfGravity.z);
     }
     
     public void SetCenterOfGravityZ(string value)
     {
-        CenterOfGravity = new Vector3(centerOfGravity.x, centerOfGravity.y, Mathf.Clamp(float.Parse(value), 0.0f, 1.0f));
+        CenterOfGravity = new Vector3(centerOfGravity.x, centerOfGravity.y, Mathf.Clamp(float.Parse(value), -1.5f, 1.5f));
     }
 
     public Transform centerOfGravityTransform;
@@ -166,6 +166,8 @@ public class FloatingObjectPhysics : MonoBehaviour
                 buoyancyForceVectors.Add(new ForceVector(forceBeginning, pressureDrag));
             }
 
+            force = force.magnitude < 10000.0f ? force : new Vector3(0.0f, 0.0f, 0.0f);
+
             rigidbody.AddForceAtPosition(force, forceBeginning);
         }
 
@@ -182,6 +184,7 @@ public class FloatingObjectPhysics : MonoBehaviour
             {
                 Vector3 slamming = SlammingForce(polygons[i]);
                 slammingForceVectors.Add(new ForceVector(polygons[i].center, slamming));
+                slamming = slamming.magnitude < 10000.0f ? slamming : new Vector3(0.0f, 0.0f, 0.0f);
                 rigidbody.AddForceAtPosition(slamming, polygons[i].center);
             }
         }
@@ -200,7 +203,7 @@ public class FloatingObjectPhysics : MonoBehaviour
         Vector3 velocityTangent = Vector3.Cross(triangle.normal, Vector3.Cross(triangle.velocity, triangle.normal) / speed) / speed;
         Vector3 vF = -triangle.velocity.magnitude * velocityTangent.normalized;
         
-        return (fluid.Density * vF * vF.magnitude * triangle.area * CfRn) / 2.0f;
+        return -(fluid.Density * vF * vF.magnitude * triangle.area * CfRn) / 2.0f;
     }
 
     private Vector3 PressureDragForce(Triangle triangle)

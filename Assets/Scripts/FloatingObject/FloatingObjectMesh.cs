@@ -33,6 +33,20 @@ public class FloatingObjectMesh : MonoBehaviour
         }
     }
 
+    [SerializeField]private Material standardMaterial;
+    [SerializeField]private Material wireframeMaterial;
+
+    private bool isWireframe;
+    public bool IsWireframe
+    {
+        get => isWireframe;
+        set
+        {
+            isWireframe = value;
+            meshRenderer.material = isWireframe ? wireframeMaterial : standardMaterial;
+        }
+    }
+
     public Vector3[] Vertices
     {
         get
@@ -53,12 +67,14 @@ public class FloatingObjectMesh : MonoBehaviour
     public int IndicesCount { get => meshFilter.mesh.triangles.Length; }
 
     private MeshFilter meshFilter;
+    private MeshRenderer meshRenderer;
 
     [HideInInspector]public EventHandler OnMeshChange;
 
     private void Awake()
     {
         meshFilter = gameObject.GetComponent<MeshFilter>() as MeshFilter;
+        meshRenderer = gameObject.GetComponent<MeshRenderer>() as MeshRenderer;
 
         transform.localScale = new Vector3(scale, scale, scale);
         meshFilter.mesh = availableMeshes[currentMeshIndex];

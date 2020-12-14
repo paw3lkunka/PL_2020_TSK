@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: FluidSurface
+  m_Name: FluidSurfaceWireframe
   m_Shader: {fileID: 4800000, guid: e62319832de941e238cbfedd58fd5687, type: 3}
   m_ShaderKeywords: USEDISCARD_ON
   m_LightmapFlags: 4

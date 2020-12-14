@@ -5,42 +5,28 @@ using UnityEngine.InputSystem;
 
 public class FloatingObjectAccelerator : MonoBehaviour
 {
-    private AccelerationInput input;
-    private Vector3 accVector;
+    public float frontPower = 1.0f;
+    public float backPower = 1.0f;
+    public float turningPower = 1.0f;
 
     private new Rigidbody rigidbody;
 
     private void Awake()
     {
-        input = new AccelerationInput();
         rigidbody = gameObject.GetComponent<Rigidbody>() as Rigidbody;
     }
 
-    private void OnEnable()
+    private void Update()
     {
-        input.Acceleration.Acceleration.performed += AccelerateObject_Performed;
-        input.Acceleration.Acceleration.canceled += AccelerateObject_Canceled;
-    }
+        Vector3 accVec = new Vector3(0.0f, 0.0f, 0.0f);
 
-    private void OnDisable()
-    {
-        input.Acceleration.Acceleration.performed -= AccelerateObject_Performed;
-        input.Acceleration.Acceleration.canceled -= AccelerateObject_Canceled;
-    }
+        accVec.z += Keyboard.current.upArrowKey.isPressed ? frontPower : 0.0f;
+        accVec.z -= Keyboard.current.downArrowKey.isPressed ? backPower : 0.0f;
 
-    private void FixedUpdate()
-    {
+        accVec.x += Keyboard.current.rightArrowKey.isPressed ? turningPower : 0.0f;
+        accVec.x -= Keyboard.current.leftArrowKey.isPressed ? turningPower : 0.0f;
 
-    }
-
-    private void AccelerateObject_Performed(InputAction.CallbackContext ctx)
-    {
-        Vector2 accVector = ctx.ReadValue<Vector2>();
-        accVector = new Vector3(accVector.x, 0.0f, accVector.y);
-    }
-
-    private void AccelerateObject_Canceled(InputAction.CallbackContext ctx)
-    {
-        accVector = new Vector3(0.0f, 0.0f, 0.0f);
+        accVec = transform.rotation * accVec;
+        rigidbody.AddForceAtPosition(accVec, transform.position + rigidbody.centerOfMass);
     }
 }

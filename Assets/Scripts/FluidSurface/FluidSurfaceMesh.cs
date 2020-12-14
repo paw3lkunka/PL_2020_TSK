@@ -37,6 +37,20 @@ public class FluidSurfaceMesh : MonoBehaviour
         Resolution = (int)value;
     }
 
+    [SerializeField]private Material standardMaterial;
+    [SerializeField]private Material wireframeMaterial;
+
+    private bool isWireframe;
+    public bool IsWireframe
+    {
+        get => isWireframe;
+        set
+        {
+            isWireframe = value;
+            meshRenderer.material = isWireframe ? wireframeMaterial : standardMaterial;
+        }
+    }
+
     private bool surfaceModified = true;
 
     [HideInInspector]public Vector3[] vertices;
